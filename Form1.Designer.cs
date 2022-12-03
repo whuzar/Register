@@ -160,7 +160,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(468, 241);
+            this.button2.Location = new System.Drawing.Point(476, 184);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(161, 29);
             this.button2.TabIndex = 13;
@@ -180,11 +180,10 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(525, 191);
+            this.label9.Location = new System.Drawing.Point(530, 250);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(50, 20);
+            this.label9.Size = new System.Drawing.Size(0, 20);
             this.label9.TabIndex = 15;
-            this.label9.Text = "label9";
             // 
             // Form1
             // 

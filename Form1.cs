@@ -1,5 +1,7 @@
 using System.Data.SQLite;
 using System.Windows.Forms;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Register
 {
@@ -46,7 +48,6 @@ namespace Register
             cmd = new SQLiteCommand(con);
 
             string LOGIN = login_txt.Text;
-            string PASSWORD = passwd_into.Text;
 
             cmd.CommandText = "SELECT COUNT(login) FROM test WHERE login = @login";
 
@@ -65,6 +66,27 @@ namespace Register
             cmd.ExecuteNonQuery();
 
         }
+
+        private static string GetHash(HashAlgorithm hashAlgorithm, string input)
+    {
+
+        // Convert the input string to a byte array and compute the hash.
+        byte[] data = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
+
+        // Create a new Stringbuilder to collect the bytes
+        // and create a string.
+        var sBuilder = new StringBuilder();
+
+        // Loop through each byte of the hashed data
+        // and format each one as a hexadecimal string.
+        for (int i = 0; i < data.Length; i++)
+        {
+            sBuilder.Append(data[i].ToString("x2"));
+        }
+
+        // Return the hexadecimal string.
+        return sBuilder.ToString();
+    }
 
         private void label2_Click(object sender, EventArgs e)
         {
@@ -100,6 +122,7 @@ namespace Register
 
             if (checklogin())
             {
+
                 try
                 {
                     new System.Net.Mail.MailAddress(this.email_txt.Text);
@@ -108,19 +131,26 @@ namespace Register
                     {
                         cmd.CommandText = "INSERT INTO test(login, email, password) VALUES (@login, @email, @password)";
 
-
                         string LOGIN = login_txt.Text;
                         string EMAIL = email_txt.Text;
                         string PASSWORD = password_txt.Text;
 
+                        using (SHA256 sha256Hash = SHA256.Create())
+                        {
+                            string hash = GetHash(sha256Hash, PASSWORD);
+                            
+                            cmd.Parameters.AddWithValue("@password", hash);
+
+                            Console.WriteLine($"The SHA256 hash of {PASSWORD} is: {hash}.");
+
+                            Console.WriteLine("Verifying the hash...");
+
+                        }
+
                         cmd.Parameters.AddWithValue("@login", LOGIN);
                         cmd.Parameters.AddWithValue("@email", EMAIL);
-                        cmd.Parameters.AddWithValue("@password", PASSWORD);
-
 
                         string[] row = new string[] { LOGIN, EMAIL, PASSWORD };
-
-
 
                         cmd.ExecuteNonQuery();
                     }
@@ -129,12 +159,10 @@ namespace Register
                         Console.WriteLine("cannot insert data");
                     }
 
-
                     login_txt.Text = "";
                     email_txt.Text = "";
                     password_txt.Text = "";
                     label8.Text = "Zarejestrowano";
-
 
                 }
                 catch (ArgumentException)
@@ -161,7 +189,38 @@ namespace Register
 
         private void button2_Click(object sender, EventArgs e)
         {
-            
+            if (!checklogin())
+            {
+                con = new SQLiteConnection(cs);
+                con.Open();
+                cmd = new SQLiteCommand(con);
+
+                string LOGIN = loginto_txt.Text;
+                string PASSWORD = passwd_into.Text;
+
+                cmd.CommandText = "SELECT password FROM test WHERE login = @login";
+
+                cmd.Parameters.AddWithValue("@password", PASSWORD);
+                cmd.Parameters.AddWithValue("@login", LOGIN);
+
+                string psw = Convert.ToString(cmd.ExecuteScalar());
+
+                if (psw == PASSWORD)
+                {
+                    label9.Text = "Zalogowano";
+                }
+                else
+                {
+                    label9.Text = "Nie poprawne has³o";
+                }
+
+                cmd.ExecuteNonQuery();
+
+            }
+            else
+            {
+                label9.Text = "Nie poprawny login";
+            }
         }
     }
 }
