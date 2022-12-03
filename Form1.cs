@@ -8,7 +8,7 @@ namespace Register
     public partial class Form1 : Form
     {
         string path = "data_table.db";
-        string cs = @"URI=file:"+Application.StartupPath+"\\data_table.db";
+        string cs = @"URI=file:" + Application.StartupPath + "\\data_table.db";
 
         SQLiteConnection con;
         SQLiteCommand cmd;
@@ -26,12 +26,12 @@ namespace Register
                 SQLiteConnection.CreateFile(path);
                 using (var sqlite = new SQLiteConnection(@"Data Source=" + path))
                 {
-                  
+
                     sqlite.Open();
                     string sql = "create table test(login varchar(30), email varchar(30), password varchar(30))";
                     SQLiteCommand command = new SQLiteCommand(sql, sqlite);
                     command.ExecuteNonQuery();
-                } 
+                }
             }
             else
             {
@@ -40,14 +40,12 @@ namespace Register
             }
         }
 
-        private Boolean checklogin()
+        private Boolean checklogin(string LOGIN)
         {
 
             con = new SQLiteConnection(cs);
             con.Open();
             cmd = new SQLiteCommand(con);
-
-            string LOGIN = login_txt.Text;
 
             cmd.CommandText = "SELECT COUNT(login) FROM test WHERE login = @login";
 
@@ -68,25 +66,29 @@ namespace Register
         }
 
         private static string GetHash(HashAlgorithm hashAlgorithm, string input)
-    {
-
-        // Convert the input string to a byte array and compute the hash.
-        byte[] data = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
-
-        // Create a new Stringbuilder to collect the bytes
-        // and create a string.
-        var sBuilder = new StringBuilder();
-
-        // Loop through each byte of the hashed data
-        // and format each one as a hexadecimal string.
-        for (int i = 0; i < data.Length; i++)
         {
-            sBuilder.Append(data[i].ToString("x2"));
+            byte[] data = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(input));
+
+            var sBuilder = new StringBuilder();
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                sBuilder.Append(data[i].ToString("x2"));
+            }
+
+            return sBuilder.ToString();
         }
 
-        // Return the hexadecimal string.
-        return sBuilder.ToString();
-    }
+        private static bool VerifyHash(HashAlgorithm hashAlgorithm, string input, string hash)
+        {
+            // Hash the input.
+            var hashOfInput = GetHash(hashAlgorithm, input);
+
+            // Create a StringComparer an compare the hashes.
+            StringComparer comparer = StringComparer.OrdinalIgnoreCase;
+
+            return comparer.Compare(hashOfInput, hash) == 0;
+        }
 
         private void label2_Click(object sender, EventArgs e)
         {
@@ -120,9 +122,8 @@ namespace Register
             con.Open();
             cmd = new SQLiteCommand(con);
 
-            if (checklogin())
+            if (checklogin(login_txt.Text))
             {
-
                 try
                 {
                     new System.Net.Mail.MailAddress(this.email_txt.Text);
@@ -138,12 +139,8 @@ namespace Register
                         using (SHA256 sha256Hash = SHA256.Create())
                         {
                             string hash = GetHash(sha256Hash, PASSWORD);
-                            
+
                             cmd.Parameters.AddWithValue("@password", hash);
-
-                            Console.WriteLine($"The SHA256 hash of {PASSWORD} is: {hash}.");
-
-                            Console.WriteLine("Verifying the hash...");
 
                         }
 
@@ -189,7 +186,7 @@ namespace Register
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if (!checklogin())
+            if (!checklogin(loginto_txt.Text))
             {
                 con = new SQLiteConnection(cs);
                 con.Open();
@@ -205,13 +202,18 @@ namespace Register
 
                 string psw = Convert.ToString(cmd.ExecuteScalar());
 
-                if (psw == PASSWORD)
+                using (SHA256 sha256Hash = SHA256.Create())
                 {
-                    label9.Text = "Zalogowano";
-                }
-                else
-                {
-                    label9.Text = "Nie poprawne has³o";
+                    if (VerifyHash(sha256Hash, PASSWORD, psw))
+                    {
+                        label9.Text = "Zalogowano";
+                        loginto_txt.Text = "";
+                        passwd_into.Text = "";
+                    }
+                    else
+                    {
+                        label9.Text = "Nie poprawne has³o";
+                    }
                 }
 
                 cmd.ExecuteNonQuery();
