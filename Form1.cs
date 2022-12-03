@@ -38,6 +38,34 @@ namespace Register
             }
         }
 
+        private Boolean checklogin()
+        {
+
+            con = new SQLiteConnection(cs);
+            con.Open();
+            cmd = new SQLiteCommand(con);
+
+            string LOGIN = login_txt.Text;
+            string PASSWORD = passwd_into.Text;
+
+            cmd.CommandText = "SELECT COUNT(login) FROM test WHERE login = @login";
+
+            cmd.Parameters.AddWithValue("@login", LOGIN);
+
+            Int32 count = Convert.ToInt32(cmd.ExecuteScalar());
+            if (count > 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+
+            cmd.ExecuteNonQuery();
+
+        }
+
         private void label2_Click(object sender, EventArgs e)
         {
 
@@ -65,50 +93,75 @@ namespace Register
 
         private void button1_Click(object sender, EventArgs e)
         {
+
             con = new SQLiteConnection(cs);
             con.Open();
             cmd = new SQLiteCommand(con);
 
-            try
+            if (checklogin())
             {
-                new System.Net.Mail.MailAddress(this.email_txt.Text);
-
                 try
                 {
-                    cmd.CommandText = "INSERT INTO test(login, email, password) VALUES (@login, @email, @password)";
+                    new System.Net.Mail.MailAddress(this.email_txt.Text);
 
-                    string LOGIN = login_txt.Text;
-                    string EMAIL = email_txt.Text;
-                    string PASSWORD = password_txt.Text;
+                    try
+                    {
+                        cmd.CommandText = "INSERT INTO test(login, email, password) VALUES (@login, @email, @password)";
 
-                    cmd.Parameters.AddWithValue("@login", LOGIN);
-                    cmd.Parameters.AddWithValue("@email", EMAIL);
-                    cmd.Parameters.AddWithValue("@password", PASSWORD);
 
-                    string[] row = new string[] { LOGIN, EMAIL, PASSWORD };
+                        string LOGIN = login_txt.Text;
+                        string EMAIL = email_txt.Text;
+                        string PASSWORD = password_txt.Text;
 
-                    cmd.ExecuteNonQuery();
+                        cmd.Parameters.AddWithValue("@login", LOGIN);
+                        cmd.Parameters.AddWithValue("@email", EMAIL);
+                        cmd.Parameters.AddWithValue("@password", PASSWORD);
+
+
+                        string[] row = new string[] { LOGIN, EMAIL, PASSWORD };
+
+
+
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("cannot insert data");
+                    }
+
+
+                    login_txt.Text = "";
+                    email_txt.Text = "";
+                    password_txt.Text = "";
+                    label8.Text = "Zarejestrowano";
+
+
                 }
-                catch (Exception)
+                catch (ArgumentException)
                 {
-                    Console.WriteLine("cannot insert data");
+                    label8.Text = "Braki w rejestracji";
+                }
+                catch (FormatException)
+                {
+                    label8.Text = "Niepoprawny E-mail";
                 }
 
-                login_txt.Text = "";
-                email_txt.Text = "";
-                password_txt.Text = "";
-
-
             }
-            catch (ArgumentException)
+            else
             {
-                //textBox is empty
-            }
-            catch (FormatException)
-            {
-                //textBox contains no valid mail address
+                label8.Text = "Taki login ju¿ istnieje";
             }
 
+        }
+
+        private void label8_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            
         }
     }
 }
